@@ -39,5 +39,42 @@ export default {
     }
 
     return target
+  },
+
+  without(list, rejectedItem) {
+    var item, j, len, results;
+    results = [];
+    for (j = 0, len = list.length; j < len; j++) {
+      item = list[j];
+      if (item !== rejectedItem) {
+        results.push(item);
+      }
+    }
+    return results;
+  },
+
+  fileTypeValid(file, type) {
+    if (!type) {
+      return true
+    }
+
+    let baseMimetype = type.replace(/\/.*$/, '')
+    let types = type.split(',')
+    for (let type of types) {
+      let t = type.trim()
+      if (/^\./.test(t)) {
+        let filename = file.name.toLowerCase()
+        if (filename.split('.').pop() === t.toLowerCase()) return true
+      } else if (/\/\*$/) {
+        var fileBaseType = file.type.replace(/\/.*$/, '')
+        if (fileBaseType === baseMimetype) {
+          return true
+        }
+      } else if (file.type === type) {
+        return true
+      }
+    }
+
+    return false
   }
 }

@@ -7,15 +7,22 @@ const DRAG_ENTER_EVENT = 'dragenter',
   DROP_EVENT = 'drop',
   CLICK_EVENT = 'click'
 
+let func = function () { }
+
 const DEFAULTS = {
   fileHoverClass: 'dropzone--file-hover',
   clickable: true,
+  multiple: false,
   paramName: 'file',
-  onFileChoose: function () { },
-  onDragEnter: function () { },
-  onDragLeave: function () { },
-  onDragOver: function () { },
-  onDrop: function () { }
+  accept: '',
+  capture: true,
+  unique: false,
+  onChange: func,
+  onEnter: func,
+  onLeave: func,
+  onHover: func,
+  onDrop: func,
+  onSomeInvalid: func
 }
 
 export default class FileDropzone {
@@ -32,77 +39,113 @@ export default class FileDropzone {
       throw new Error('No matched element.')
     }
 
-    this.target = target
+    this.element = target
     this.options = u.assign(DEFAULTS, opts)
     this.disabled = false
+    this.files = []
+    this.fileInput = null
+    this.multiple = false
 
     this.init()
   }
 
   init() {
     if (this.options.clickable) {
-      this.target.addClass('dropzone--clickable')
+      this.element.addClass('dropzone--clickable')
+      this.element.on('click', this.openFileChooser.bind(this))
     }
-    if (!this.target.find('input[type=file]') || this.target.find('input[type=file]').length <= 0) {
-      this.target.append(`<input type="file" hidden name="${this.options.paramName}" class="${this.options.paramName}" >`)
+    this.multiple = this.options.multiple || this.element.find('input[type=file]').attr('multiple') || false
+
+    if (!this.element.find('input[type=file]') || this.element.find('input[type=file]').length <= 0) {
+      this.element.append(`<input type="file" hidden name="${this.options.paramName}" class="${this.options.paramName}" >`)
     }
 
-    this.fileInput = this.target.find('input[type=file]')
+    this.fileInput = this.element.find('input[type=file]')
 
-    this.target.on(DRAG_ENTER_EVENT, this._handleDragEnter.bind(this))
+    if (this.multiple) {
+      this.fileInput.attr('multiple', 'multiple')
+    }
+
+    if (this.options.capture) {
+      this.fileInput.attr('capture', this.options.capture)
+    }
+
+    if (this.options.accept) {
+      this.fileInput.attr('accept', this.options.accept)
+    }
+
+    this.element.on(DRAG_ENTER_EVENT, this._handleDragEnter.bind(this))
       .on(DRAG_LEAVE_EVENT, this._handleDragLeave.bind(this))
       .on(DRAG_OVER_EVENT, this._handleDragOver.bind(this))
       .on(DROP_EVENT, this._handleDrop.bind(this))
-      .on(CLICK_EVENT, this._handleClick.bind(this))
+
+    var that = this
 
     this.fileInput.on('click', (evt) => {
       evt.stopPropagation()
-    }).on('change', (evt) => {
-      if (this.disabled) return
-      this.file = evt.target.files[0]
-      this.options.onFileChoose && this.options.onFileChoose()
+    }).on('change', function (evt) {
+      console.log('change')
+      if (that.disabled) return
+      var fileList = evt.target.files
+      var files = []
+      for (var i = 0, len = fileList.length; i < len; i++) {
+        let value = fileList[i]
+        if (value instanceof File) {
+          files.push(value)
+        }
+      }
+      that.addFiles(files)
+      if (!that.options.unique) {
+        $(this).val('')
+      }
     })
+
+    this.insetStyles()
+  }
+
+  insetStyles() {
+    $("<style>.dropzone--clickable { cursor: pointer; }</style>").appendTo("head")
   }
 
   _handleDragEnter(evt) {
     if (this.disabled) return
     evt.preventDefault()
-    this.options.onDragEnter && this.options.onDragEnter(evt)
-    this.target.addClass(this.options.fileHoverClass)
+    this.options.onEnter && this.options.onEnter(evt)
+    this.element.addClass(this.options.fileHoverClass)
   }
 
   _handleDragLeave(evt) {
     if (this.disabled) return
     evt.preventDefault()
-    this.options.onDragLeave && this.options.onDragLeave(evt)
-    this.target.removeClass(this.options.fileHoverClass)
+    this.options.onLeave && this.options.onLeave(evt)
+    this.element.removeClass(this.options.fileHoverClass)
   }
 
   _handleDragOver(evt) {
     if (this.disabled) return
     evt.preventDefault()
-    this.options.onDragOver && this.options.onDragOver(evt)
+    this.options.onHover && this.options.onHover(evt)
   }
 
   _handleDrop(evt) {
     if (this.disabled) return
     evt.preventDefault()
     this.options.onDrop && this.options.onDrop(evt)
-    this.target.removeClass(this.options.fileHoverClass)
+    this.element.removeClass(this.options.fileHoverClass)
     let dt = evt.dataTransfer || evt.originalEvent.dataTransfer
-    let file
+    let files = []
     if (dt.items && dt.items.length) {
-      for (let item of dt.items) {
+      for (let i = 0, len = dt.items.length; i < len; i++) {
+        let item = dt.items[i]
         if (item.kind === 'file') {
-          file = item.getAsFile()
+          files.push(item.getAsFile())
         }
       }
     } else {
-      file = dt.files[0]
+      files = dt.files
     }
 
-    this.file = file
-    this.options.onFileChoose && this.options.onFileChoose()
+    this.addFiles(files)
   }
 
   _handleClick(evt) {
@@ -111,22 +154,57 @@ export default class FileDropzone {
     this.openFileChooser()
   }
 
+  addFiles(files) {
+    var valid = []
+    var invalid = []
+    files.forEach(file => {
+      if (u.fileTypeValid(file, this.accept)) {
+        if (!this.options.unique || this.files.indexOf(file) < 0) {
+          valid.push(file)
+        }
+      } else {
+        invalid.push(file)
+      }
+    })
+
+    if (invalid.length) {
+      this.onSomeInvalid && this.onSomeInvalid(invalid)
+    }
+
+    this.files = this.files.concat(valid)
+    this.options.onChange && this.options.onChange()
+  }
+
+  removeFile(file) {
+    let oldLen = this.files.length
+    u.without(file, this.files)
+    if (this.files.length < oldLen) {
+      this.options.onChange && this.options.onChange()
+    }
+  }
+
   openFileChooser() {
-    this.fileInput.value = null
     this.fileInput.click()
   }
 
-  getCurrentFile() {
-    return this.file
+  getFiles() {
+    return this.files
+  }
+
+  clearAll() {
+    this.files = []
+    this.options.onChange && this.options.onChange()
   }
 
   disable() {
     this.disabled = true
-    this.target.addClass('dropzone--disabled')
+    this.element.addClass('dropzone--disabled')
+    this.fileInput.prop('disabled', true)
   }
 
   enable() {
     this.disabled = false
-    this.target.removeClass('dropzone--disabled')
+    this.element.removeClass('dropzone--disabled')
+    this.fileInput.prop('disabled', false)
   }
 }
