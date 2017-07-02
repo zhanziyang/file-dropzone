@@ -65,7 +65,7 @@ export default {
       if (/^\./.test(t)) {
         let filename = file.name.toLowerCase()
         if (filename.split('.').pop() === t.toLowerCase()) return true
-      } else if (/\/\*$/) {
+      } else if (/\/\*$/.test(t)) {
         var fileBaseType = file.type.replace(/\/.*$/, '')
         if (fileBaseType === baseMimetype) {
           return true
