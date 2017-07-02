@@ -37,7 +37,9 @@
   <script src="https://unpkg.com/jquery"></script>
   <script src="../dist/file-dropzone.js"></script>
   <script>
-    var myDropzone = new FileDropzone('.my-dropzone')
+    var myDropzone = new FileDropzone('.my-dropzone', {
+      // multiple: false
+    })
   </script>
 </body>
 

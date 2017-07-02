@@ -147,27 +147,23 @@ var u = {
   }
 };
 
-var DRAG_ENTER_EVENT = 'dragenter';
-var DRAG_LEAVE_EVENT = 'dragleave';
-var DRAG_OVER_EVENT = 'dragover';
-var DROP_EVENT = 'drop';
-
-var func = function func() {};
+var noop = function noop() {};
 
 var DEFAULTS = {
+  target: '',
   fileHoverClass: 'dropzone--file-hover',
   clickable: true,
-  multiple: false,
+  multiple: true,
   paramName: 'file',
   accept: '',
   capture: true,
   unique: false,
-  onChange: func,
-  onEnter: func,
-  onLeave: func,
-  onHover: func,
-  onDrop: func,
-  onSomeInvalid: func
+  onChange: noop,
+  onEnter: noop,
+  onLeave: noop,
+  onHover: noop,
+  onDrop: noop,
+  onSomeInvalid: noop
 };
 
 var FileDropzone = function () {
@@ -223,14 +219,13 @@ var FileDropzone = function () {
         this.fileInput.attr('accept', this.options.accept);
       }
 
-      this.element.on(DRAG_ENTER_EVENT, this._handleDragEnter.bind(this)).on(DRAG_LEAVE_EVENT, this._handleDragLeave.bind(this)).on(DRAG_OVER_EVENT, this._handleDragOver.bind(this)).on(DROP_EVENT, this._handleDrop.bind(this));
+      this.element.on('dragenter', _handleDragEnter.bind(this)).on('dragleave', _handleDragLeave.bind(this)).on('dragend', _handleDragLeave.bind(this)).on('dragover', _handleDragOver.bind(this)).on('drop', _handleDrop.bind(this));
 
       var that = this;
 
       this.fileInput.on('click', function (evt) {
         evt.stopPropagation();
       }).on('change', function (evt) {
-        console.log('change');
         if (that.disabled) return;
         var fileList = evt.target.files;
         var files = [];
@@ -246,64 +241,7 @@ var FileDropzone = function () {
         }
       });
 
-      this.insetStyles();
-    }
-  }, {
-    key: 'insetStyles',
-    value: function insetStyles() {
-      $("<style>.dropzone--clickable { cursor: pointer; }</style>").appendTo("head");
-    }
-  }, {
-    key: '_handleDragEnter',
-    value: function _handleDragEnter(evt) {
-      if (this.disabled) return;
-      evt.preventDefault();
-      this.options.onEnter && this.options.onEnter(evt);
-      this.element.addClass(this.options.fileHoverClass);
-    }
-  }, {
-    key: '_handleDragLeave',
-    value: function _handleDragLeave(evt) {
-      if (this.disabled) return;
-      evt.preventDefault();
-      this.options.onLeave && this.options.onLeave(evt);
-      this.element.removeClass(this.options.fileHoverClass);
-    }
-  }, {
-    key: '_handleDragOver',
-    value: function _handleDragOver(evt) {
-      if (this.disabled) return;
-      evt.preventDefault();
-      this.options.onHover && this.options.onHover(evt);
-    }
-  }, {
-    key: '_handleDrop',
-    value: function _handleDrop(evt) {
-      if (this.disabled) return;
-      evt.preventDefault();
-      this.options.onDrop && this.options.onDrop(evt);
-      this.element.removeClass(this.options.fileHoverClass);
-      var dt = evt.dataTransfer || evt.originalEvent.dataTransfer;
-      var files = [];
-      if (dt.items && dt.items.length) {
-        for (var i = 0, len = dt.items.length; i < len; i++) {
-          var item = dt.items[i];
-          if (item.kind === 'file') {
-            files.push(item.getAsFile());
-          }
-        }
-      } else {
-        files = dt.files;
-      }
-
-      this.addFiles(files);
-    }
-  }, {
-    key: '_handleClick',
-    value: function _handleClick(evt) {
-      if (this.disabled) return;
-      if (!this.options.clickable) return;
-      this.openFileChooser();
+      _insetStyles();
     }
   }, {
     key: 'addFiles',
@@ -326,6 +264,13 @@ var FileDropzone = function () {
         this.onSomeInvalid && this.onSomeInvalid(invalid);
       }
 
+      if (!valid[0]) return;
+
+      if (!this.multiple) {
+        if (this.files.length > 0) return;
+        valid = valid.slice(0, 1);
+      }
+
       this.files = this.files.concat(valid);
       this.options.onChange && this.options.onChange();
     }
@@ -333,7 +278,7 @@ var FileDropzone = function () {
     key: 'removeFile',
     value: function removeFile(file) {
       var oldLen = this.files.length;
-      u.without(file, this.files);
+      this.files = u.without(this.files, file);
       if (this.files.length < oldLen) {
         this.options.onChange && this.options.onChange();
       }
@@ -342,11 +287,6 @@ var FileDropzone = function () {
     key: 'openFileChooser',
     value: function openFileChooser() {
       this.fileInput.click();
-    }
-  }, {
-    key: 'getFiles',
-    value: function getFiles() {
-      return this.files;
     }
   }, {
     key: 'clearAll',
@@ -368,9 +308,75 @@ var FileDropzone = function () {
       this.element.removeClass('dropzone--disabled');
       this.fileInput.prop('disabled', false);
     }
+  }], [{
+    key: 'getFileSize',
+    value: function getFileSize(file) {
+      var unit = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'b';
+
+      var units = ['b', 'kb', 'mb', 'gb', 'tb'];
+      if (!(file instanceof File)) {
+        throw new TypeError('First argument "file" should be a File instance.');
+      }
+      if (!unit || typeof unit !== 'string') {
+        unit = 'b';
+      }
+      if (unit == 'b') return file.size;
+
+      var unitIndex = units.indexOf(unit.toLowerCase);
+      if (unitIndex < 0) {
+        throw new TypeError('The unit should be one of "tb", "gb", "mb", "kb" and "b", the default value is "b"');
+      }
+
+      return file.size / Math.pow(1024, unitIndex - 1);
+    }
   }]);
   return FileDropzone;
 }();
+
+function _insetStyles() {
+  $("<style>.dropzone--clickable { cursor: pointer; }</style>").appendTo("head");
+}
+
+function _handleDragEnter(evt) {
+  if (this.disabled) return;
+  evt.preventDefault();
+  this.options.onEnter && this.options.onEnter(evt);
+  this.element.addClass(this.options.fileHoverClass);
+}
+
+function _handleDragLeave(evt) {
+  if (this.disabled) return;
+  evt.preventDefault();
+  this.options.onLeave && this.options.onLeave(evt);
+  this.element.removeClass(this.options.fileHoverClass);
+}
+
+function _handleDragOver(evt) {
+  if (this.disabled) return;
+  evt.preventDefault();
+  this.options.onHover && this.options.onHover(evt);
+}
+
+function _handleDrop(evt) {
+  if (this.disabled) return;
+  evt.preventDefault();
+  this.options.onDrop && this.options.onDrop(evt);
+  this.element.removeClass(this.options.fileHoverClass);
+  var dt = evt.dataTransfer || evt.originalEvent.dataTransfer;
+  var files = [];
+  if (dt.items && dt.items.length) {
+    for (var i = 0, len = dt.items.length; i < len; i++) {
+      var item = dt.items[i];
+      if (item.kind === 'file') {
+        files.push(item.getAsFile());
+      }
+    }
+  } else {
+    files = dt.files;
+  }
+
+  this.addFiles(files);
+}
 
 return FileDropzone;
 

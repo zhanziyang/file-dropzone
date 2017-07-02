@@ -1,28 +1,23 @@
 import u from './util'
 import $ from 'jquery'
 
-const DRAG_ENTER_EVENT = 'dragenter',
-  DRAG_LEAVE_EVENT = 'dragleave',
-  DRAG_OVER_EVENT = 'dragover',
-  DROP_EVENT = 'drop',
-  CLICK_EVENT = 'click'
-
-let func = function () { }
+let noop = function () { }
 
 const DEFAULTS = {
+  target: '',
   fileHoverClass: 'dropzone--file-hover',
   clickable: true,
-  multiple: false,
+  multiple: true,
   paramName: 'file',
   accept: '',
   capture: true,
   unique: false,
-  onChange: func,
-  onEnter: func,
-  onLeave: func,
-  onHover: func,
-  onDrop: func,
-  onSomeInvalid: func
+  onChange: noop,
+  onEnter: noop,
+  onLeave: noop,
+  onHover: noop,
+  onDrop: noop,
+  onSomeInvalid: noop
 }
 
 export default class FileDropzone {
@@ -47,6 +42,24 @@ export default class FileDropzone {
     this.multiple = false
 
     this.init()
+  }
+
+  static getFileSize(file, unit = 'b') {
+    let units = ['b', 'kb', 'mb', 'gb', 'tb']
+    if (!(file instanceof File)) {
+      throw new TypeError('First argument "file" should be a File instance.')
+    }
+    if (!unit || typeof unit !== 'string') {
+      unit = 'b'
+    }
+    if (unit == 'b') return file.size
+
+    var unitIndex = units.indexOf(unit.toLowerCase)
+    if (unitIndex < 0) {
+      throw new TypeError('The unit should be one of "tb", "gb", "mb", "kb" and "b", the default value is "b"')
+    }
+
+    return file.size / Math.pow(1024, unitIndex - 1)
   }
 
   init() {
@@ -74,17 +87,17 @@ export default class FileDropzone {
       this.fileInput.attr('accept', this.options.accept)
     }
 
-    this.element.on(DRAG_ENTER_EVENT, this._handleDragEnter.bind(this))
-      .on(DRAG_LEAVE_EVENT, this._handleDragLeave.bind(this))
-      .on(DRAG_OVER_EVENT, this._handleDragOver.bind(this))
-      .on(DROP_EVENT, this._handleDrop.bind(this))
+    this.element.on('dragenter', _handleDragEnter.bind(this))
+      .on('dragleave', _handleDragLeave.bind(this))
+      .on('dragend', _handleDragLeave.bind(this))
+      .on('dragover', _handleDragOver.bind(this))
+      .on('drop', _handleDrop.bind(this))
 
     var that = this
 
     this.fileInput.on('click', (evt) => {
       evt.stopPropagation()
     }).on('change', function (evt) {
-      console.log('change')
       if (that.disabled) return
       var fileList = evt.target.files
       var files = []
@@ -100,58 +113,7 @@ export default class FileDropzone {
       }
     })
 
-    this.insetStyles()
-  }
-
-  insetStyles() {
-    $("<style>.dropzone--clickable { cursor: pointer; }</style>").appendTo("head")
-  }
-
-  _handleDragEnter(evt) {
-    if (this.disabled) return
-    evt.preventDefault()
-    this.options.onEnter && this.options.onEnter(evt)
-    this.element.addClass(this.options.fileHoverClass)
-  }
-
-  _handleDragLeave(evt) {
-    if (this.disabled) return
-    evt.preventDefault()
-    this.options.onLeave && this.options.onLeave(evt)
-    this.element.removeClass(this.options.fileHoverClass)
-  }
-
-  _handleDragOver(evt) {
-    if (this.disabled) return
-    evt.preventDefault()
-    this.options.onHover && this.options.onHover(evt)
-  }
-
-  _handleDrop(evt) {
-    if (this.disabled) return
-    evt.preventDefault()
-    this.options.onDrop && this.options.onDrop(evt)
-    this.element.removeClass(this.options.fileHoverClass)
-    let dt = evt.dataTransfer || evt.originalEvent.dataTransfer
-    let files = []
-    if (dt.items && dt.items.length) {
-      for (let i = 0, len = dt.items.length; i < len; i++) {
-        let item = dt.items[i]
-        if (item.kind === 'file') {
-          files.push(item.getAsFile())
-        }
-      }
-    } else {
-      files = dt.files
-    }
-
-    this.addFiles(files)
-  }
-
-  _handleClick(evt) {
-    if (this.disabled) return
-    if (!this.options.clickable) return
-    this.openFileChooser()
+    _insetStyles()
   }
 
   addFiles(files) {
@@ -171,13 +133,20 @@ export default class FileDropzone {
       this.onSomeInvalid && this.onSomeInvalid(invalid)
     }
 
+    if (!valid[0]) return
+
+    if (!this.multiple) {
+      if (this.files.length > 0) return
+      valid = valid.slice(0, 1)
+    }
+
     this.files = this.files.concat(valid)
     this.options.onChange && this.options.onChange()
   }
 
   removeFile(file) {
     let oldLen = this.files.length
-    u.without(file, this.files)
+    this.files = u.without(this.files, file)
     if (this.files.length < oldLen) {
       this.options.onChange && this.options.onChange()
     }
@@ -185,10 +154,6 @@ export default class FileDropzone {
 
   openFileChooser() {
     this.fileInput.click()
-  }
-
-  getFiles() {
-    return this.files
   }
 
   clearAll() {
@@ -207,4 +172,56 @@ export default class FileDropzone {
     this.element.removeClass('dropzone--disabled')
     this.fileInput.prop('disabled', false)
   }
+}
+
+
+function _insetStyles() {
+  $("<style>.dropzone--clickable { cursor: pointer; }</style>").appendTo("head")
+}
+
+function _handleDragEnter(evt) {
+  if (this.disabled) return
+  evt.preventDefault()
+  this.options.onEnter && this.options.onEnter(evt)
+  this.element.addClass(this.options.fileHoverClass)
+}
+
+function _handleDragLeave(evt) {
+  if (this.disabled) return
+  evt.preventDefault()
+  this.options.onLeave && this.options.onLeave(evt)
+  this.element.removeClass(this.options.fileHoverClass)
+}
+
+function _handleDragOver(evt) {
+  if (this.disabled) return
+  evt.preventDefault()
+  this.options.onHover && this.options.onHover(evt)
+}
+
+function _handleDrop(evt) {
+  if (this.disabled) return
+  evt.preventDefault()
+  this.options.onDrop && this.options.onDrop(evt)
+  this.element.removeClass(this.options.fileHoverClass)
+  let dt = evt.dataTransfer || evt.originalEvent.dataTransfer
+  let files = []
+  if (dt.items && dt.items.length) {
+    for (let i = 0, len = dt.items.length; i < len; i++) {
+      let item = dt.items[i]
+      if (item.kind === 'file') {
+        files.push(item.getAsFile())
+      }
+    }
+  } else {
+    files = dt.files
+  }
+
+  this.addFiles(files)
+}
+
+function _handleClick(evt) {
+  if (this.disabled) return
+  if (!this.options.clickable) return
+  this.openFileChooser()
 }
