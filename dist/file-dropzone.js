@@ -154,6 +154,7 @@ var _files = [];
 var _setFiles = function _setFiles(files) {
   _files = files;
 };
+var dragTrack = 0;
 
 var DEFAULTS = {
   target: '',
@@ -171,7 +172,7 @@ var DEFAULTS = {
   onHover: noop,
   onDrop: noop,
   onInvalid: noop,
-  beforeAppend: noop
+  beforeAdd: noop
 };
 
 var FileDropzone = function () {
@@ -207,13 +208,11 @@ var FileDropzone = function () {
         this.element.addClass('dropzone--clickable');
         this.element.on('click', this.openFileChooser.bind(this));
       }
-      this.multiple = this.options.multiple || this.element.find('input[type=file]').attr('multiple') || false;
+      this.multiple = typeof this.options.multiple === 'boolean' ? this.options.multiple : true;
 
-      if (!this.element.find('input[type=file]') || this.element.find('input[type=file]').length <= 0) {
-        this.element.append('<input type="file" hidden name="' + this.options.paramName + '" class="' + this.options.paramName + '" >');
-      }
+      this.fileInput = $('<input type="file" hidden name="' + this.options.paramName + '" class="' + this.options.paramName + '" >');
 
-      this.fileInput = this.element.find('input[type=file]');
+      this.element.next(this.fileInput);
 
       if (this.multiple) {
         this.fileInput.attr('multiple', 'multiple');
@@ -243,7 +242,7 @@ var FileDropzone = function () {
             files.push(value);
           }
         }
-        _addFiles.bind(this)(files);
+        _addFiles.bind(that)(files);
         if (!that.options.unique) {
           $(this).val('');
         }
@@ -272,7 +271,7 @@ var FileDropzone = function () {
       var files = this.getFiles();
       // let oldLen = files.length
       var removed = files.pop();
-      _setFiles(files);
+      _setFiles.bind(this)(files);
       this.options.onChange && this.options.onChange.bind(this)();
       return removed;
     }
@@ -284,7 +283,7 @@ var FileDropzone = function () {
   }, {
     key: 'clearAll',
     value: function clearAll() {
-      _setFiles([]);
+      _setFiles.bind(this)([]);
       this.options.onChange && this.options.onChange.bind(this)();
     }
   }, {
@@ -332,7 +331,7 @@ function _addFiles(files) {
   var valid = [];
   var invalid = [];
   files.forEach(function (file) {
-    if (u.fileTypeValid(file, _this.accept)) {
+    if (u.fileTypeValid(file, _this.options.accept)) {
       if (!_this.options.unique || _this.getFiles().indexOf(file) < 0) {
         valid.push(file);
       }
@@ -342,19 +341,18 @@ function _addFiles(files) {
   });
 
   if (invalid.length) {
-    this.onInvalid && this.onInvalid(invalid);
+    this.options.onInvalid && this.options.onInvalid.bind(this)(invalid);
   }
 
   if (!valid[0]) return;
 
   if (!this.multiple) {
-    if (this.getFiles().length > 0) return;
     valid = valid.slice(0, 1);
   }
 
   var canAdd = true;
-  if (this.options.beforeAppend) {
-    var result = this.options.beforeAppend(valid);
+  if (this.options.beforeAdd) {
+    var result = this.options.beforeAdd.bind(this)(valid);
     if (typeof result == 'boolean') {
       canAdd = result;
     }
@@ -362,12 +360,10 @@ function _addFiles(files) {
 
   if (!canAdd) return;
 
-  if (!this.multiple) {
-    _setFiles(valid.slice(0, 1));
-  } else if (this.forceReplace) {
-    _setFiles(valid);
+  if (!this.multiple || this.options.forceReplace) {
+    _setFiles.bind(this)(valid);
   } else {
-    _setFiles(this.getFiles().concat(valid));
+    _setFiles.bind(this)(this.getFiles().concat(valid));
   }
   this.options.onChange && this.options.onChange.bind(this)();
 }
@@ -379,15 +375,21 @@ function _insetStyles() {
 function _handleDragEnter(evt) {
   if (this.disabled) return;
   evt.preventDefault();
-  this.options.onEnter && this.options.onEnter.bind(this)(evt);
-  this.element.addClass(this.options.fileHoverClass);
+  dragTrack++;
+  if (dragTrack == 1) {
+    this.options.onEnter && this.options.onEnter.bind(this)(evt);
+    this.element.addClass(this.options.fileHoverClass);
+  }
 }
 
 function _handleDragLeave(evt) {
   if (this.disabled) return;
   evt.preventDefault();
-  this.options.onLeave && this.options.onLeave.bind(this)(evt);
-  this.element.removeClass(this.options.fileHoverClass);
+  dragTrack--;
+  if (dragTrack === 0) {
+    this.options.onLeave && this.options.onLeave.bind(this)(evt);
+    this.element.removeClass(this.options.fileHoverClass);
+  }
 }
 
 function _handleDragOver(evt) {
@@ -399,6 +401,7 @@ function _handleDragOver(evt) {
 function _handleDrop(evt) {
   if (this.disabled) return;
   evt.preventDefault();
+  dragTrack--;
   this.options.onDrop && this.options.onDrop.bind(this)(evt);
   this.element.removeClass(this.options.fileHoverClass);
   var dt = evt.dataTransfer || evt.originalEvent.dataTransfer;

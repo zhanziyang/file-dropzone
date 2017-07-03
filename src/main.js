@@ -6,6 +6,7 @@ let _files = []
 let _setFiles = function (files) {
   _files = files
 }
+let dragTrack = 0
 
 const DEFAULTS = {
   target: '',
@@ -23,7 +24,7 @@ const DEFAULTS = {
   onHover: noop,
   onDrop: noop,
   onInvalid: noop,
-  beforeAppend: noop
+  beforeAdd: noop
 }
 
 export default class FileDropzone {
@@ -73,13 +74,11 @@ export default class FileDropzone {
       this.element.addClass('dropzone--clickable')
       this.element.on('click', this.openFileChooser.bind(this))
     }
-    this.multiple = this.options.multiple || this.element.find('input[type=file]').attr('multiple') || false
+    this.multiple = typeof this.options.multiple === 'boolean' ? this.options.multiple : true
 
-    if (!this.element.find('input[type=file]') || this.element.find('input[type=file]').length <= 0) {
-      this.element.append(`<input type="file" hidden name="${this.options.paramName}" class="${this.options.paramName}" >`)
-    }
+    this.fileInput = $(`<input type="file" hidden name="${this.options.paramName}" class="${this.options.paramName}" >`)
 
-    this.fileInput = this.element.find('input[type=file]')
+    this.element.next(this.fileInput)
 
     if (this.multiple) {
       this.fileInput.attr('multiple', 'multiple')
@@ -139,7 +138,7 @@ export default class FileDropzone {
     let files = this.getFiles()
     // let oldLen = files.length
     var removed = files.pop()
-    _setFiles(files)
+    _setFiles.bind(this)(files)
     this.options.onChange && this.options.onChange.bind(this)()
     return removed
   }
@@ -149,7 +148,7 @@ export default class FileDropzone {
   }
 
   clearAll() {
-    _setFiles([])
+    _setFiles.bind(this)([])
     this.options.onChange && this.options.onChange.bind(this)()
   }
 
@@ -170,7 +169,7 @@ function _addFiles(files) {
   var valid = []
   var invalid = []
   files.forEach(file => {
-    if (u.fileTypeValid(file, this.accept)) {
+    if (u.fileTypeValid(file, this.options.accept)) {
       if (!this.options.unique || this.getFiles().indexOf(file) < 0) {
         valid.push(file)
       }
@@ -180,19 +179,18 @@ function _addFiles(files) {
   })
 
   if (invalid.length) {
-    this.onInvalid && this.onInvalid(invalid)
+    this.options.onInvalid && this.options.onInvalid.bind(this)(invalid)
   }
 
   if (!valid[0]) return
 
   if (!this.multiple) {
-    if (this.getFiles().length > 0) return
     valid = valid.slice(0, 1)
   }
 
   let canAdd = true
-  if (this.options.beforeAppend) {
-    let result = this.options.beforeAppend(valid)
+  if (this.options.beforeAdd) {
+    let result = this.options.beforeAdd.bind(this)(valid)
     if (typeof result == 'boolean') {
       canAdd = result
     }
@@ -200,12 +198,10 @@ function _addFiles(files) {
 
   if (!canAdd) return
 
-  if (!this.multiple) {
-    _setFiles(valid.slice(0, 1))
-  } else if (this.forceReplace) {
-    _setFiles(valid)
+  if (!this.multiple || this.options.forceReplace) {
+    _setFiles.bind(this)(valid)
   } else {
-    _setFiles(this.getFiles().concat(valid))
+    _setFiles.bind(this)(this.getFiles().concat(valid))
   }
   this.options.onChange && this.options.onChange.bind(this)()
 }
@@ -217,15 +213,21 @@ function _insetStyles() {
 function _handleDragEnter(evt) {
   if (this.disabled) return
   evt.preventDefault()
-  this.options.onEnter && this.options.onEnter.bind(this)(evt)
-  this.element.addClass(this.options.fileHoverClass)
+  dragTrack++
+  if (dragTrack == 1) {
+    this.options.onEnter && this.options.onEnter.bind(this)(evt)
+    this.element.addClass(this.options.fileHoverClass)
+  }
 }
 
 function _handleDragLeave(evt) {
   if (this.disabled) return
   evt.preventDefault()
-  this.options.onLeave && this.options.onLeave.bind(this)(evt)
-  this.element.removeClass(this.options.fileHoverClass)
+  dragTrack--
+  if (dragTrack === 0) {
+    this.options.onLeave && this.options.onLeave.bind(this)(evt)
+    this.element.removeClass(this.options.fileHoverClass)
+  }
 }
 
 function _handleDragOver(evt) {
@@ -237,6 +239,7 @@ function _handleDragOver(evt) {
 function _handleDrop(evt) {
   if (this.disabled) return
   evt.preventDefault()
+  dragTrack--
   this.options.onDrop && this.options.onDrop.bind(this)(evt)
   this.element.removeClass(this.options.fileHoverClass)
   let dt = evt.dataTransfer || evt.originalEvent.dataTransfer

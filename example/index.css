@@ -1,0 +1,65 @@
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #f3f5f6;
+  text-align: center;
+  color: #1C90F3;
+}
+
+h1 {
+  text-transform: uppercase;
+}
+
+h3 {
+  color: #666;
+}
+
+#box {
+  width: 300px;
+  height: 300px;
+  display: inline-block;
+  background: white;
+  transition: all .3s;
+  margin-top: 80px;
+  overflow: auto;
+  text-align: left;
+  padding: 10px 0;
+  box-sizing: border-box;
+}
+
+#box.entered {
+  box-shadow: inset 0 0 10px #aaa;
+}
+
+#box .words {
+  padding: 0 10px;
+  font-size: 14px;
+  color: #777
+}
+
+#box .file-name {
+  color: #777;
+  font-size: 14px;
+  line-height: 1.8;
+  max-width: 300px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#box .file-name:before {
+  content: '\1F4CE';
+  display: inline-block;
+  margin-right: 5px;
+}
