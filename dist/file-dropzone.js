@@ -62,7 +62,7 @@ var u = {
     return Object.prototype.toString.call(val) === '[object Array]';
   },
   isObject: function isObject(val) {
-    return val && (typeof val === 'undefined' ? 'undefined' : _typeof(val)) === 'object' && !isArray(val);
+    return val && (typeof val === 'undefined' ? 'undefined' : _typeof(val)) === 'object' && !this.isArray(val);
   },
   addUnique: function addUnique(arr, val) {
     if (arr.indexOf(val) < 0) {

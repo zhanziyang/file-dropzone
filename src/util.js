@@ -8,7 +8,7 @@ export default {
   },
 
   isObject(val) {
-    return val && typeof val === 'object' && !isArray(val)
+    return val && typeof val === 'object' && !this.isArray(val)
   },
 
   addUnique(arr, val) {
