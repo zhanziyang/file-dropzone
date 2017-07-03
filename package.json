@@ -1,6 +1,6 @@
 {
   "name": "file-dropzone",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Drop files anywhere on your web page. Based on jQuery.",
   "main": "dist/file-dropzone.js",
   "scripts": {
