@@ -113,7 +113,7 @@ export default class FileDropzone {
           files.push(value)
         }
       }
-      _addFiles.bind(this)(files)
+      _addFiles.bind(that)(files)
       if (!that.options.unique) {
         $(this).val('')
       }
