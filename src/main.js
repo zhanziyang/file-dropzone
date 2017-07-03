@@ -131,7 +131,7 @@ export default class FileDropzone {
     let oldLen = files.length
     files = u.without(files, file)
     if (files.length < oldLen) {
-      this.options.onChange && this.options.onChange()
+      this.options.onChange && this.options.onChange.bind(this)()
     }
   }
 
@@ -140,7 +140,7 @@ export default class FileDropzone {
     // let oldLen = files.length
     var removed = files.pop()
     _setFiles(files)
-    this.options.onChange && this.options.onChange()
+    this.options.onChange && this.options.onChange.bind(this)()
     return removed
   }
 
@@ -150,7 +150,7 @@ export default class FileDropzone {
 
   clearAll() {
     _setFiles([])
-    this.options.onChange && this.options.onChange()
+    this.options.onChange && this.options.onChange.bind(this)()
   }
 
   disable() {
@@ -207,7 +207,7 @@ function _addFiles(files) {
   } else {
     _setFiles(this.getFiles().concat(valid))
   }
-  this.options.onChange && this.options.onChange()
+  this.options.onChange && this.options.onChange.bind(this)()
 }
 
 function _insetStyles() {
@@ -217,27 +217,27 @@ function _insetStyles() {
 function _handleDragEnter(evt) {
   if (this.disabled) return
   evt.preventDefault()
-  this.options.onEnter && this.options.onEnter(evt)
+  this.options.onEnter && this.options.onEnter.bind(this)(evt)
   this.element.addClass(this.options.fileHoverClass)
 }
 
 function _handleDragLeave(evt) {
   if (this.disabled) return
   evt.preventDefault()
-  this.options.onLeave && this.options.onLeave(evt)
+  this.options.onLeave && this.options.onLeave.bind(this)(evt)
   this.element.removeClass(this.options.fileHoverClass)
 }
 
 function _handleDragOver(evt) {
   if (this.disabled) return
   evt.preventDefault()
-  this.options.onHover && this.options.onHover(evt)
+  this.options.onHover && this.options.onHover.bind(this)(evt)
 }
 
 function _handleDrop(evt) {
   if (this.disabled) return
   evt.preventDefault()
-  this.options.onDrop && this.options.onDrop(evt)
+  this.options.onDrop && this.options.onDrop.bind(this)(evt)
   this.element.removeClass(this.options.fileHoverClass)
   let dt = evt.dataTransfer || evt.originalEvent.dataTransfer
   let files = []
