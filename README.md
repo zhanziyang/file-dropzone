@@ -39,3 +39,7 @@ var myDropzone = new FileDropzone({
   }
 })
 ```
+
+## Methods
+
+To be done...
