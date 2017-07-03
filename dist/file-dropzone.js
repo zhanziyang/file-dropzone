@@ -121,11 +121,13 @@ var u = {
         if (/^\./.test(t)) {
           var filename = file.name.toLowerCase();
           if (filename.split('.').pop() === t.toLowerCase()) return true;
-        } else {
+        } else if (/\/\*$/.test(t)) {
           var fileBaseType = file.type.replace(/\/.*$/, '');
           if (fileBaseType === baseMimetype) {
             return true;
           }
+        } else if (file.type === _type) {
+          return true;
         }
       }
     } catch (err) {
@@ -148,6 +150,10 @@ var u = {
 };
 
 var noop = function noop() {};
+var _files = [];
+var _setFiles = function _setFiles(files) {
+  _files = files;
+};
 
 var DEFAULTS = {
   target: '',
@@ -158,12 +164,14 @@ var DEFAULTS = {
   accept: '',
   capture: true,
   unique: false,
+  forceReplace: false,
   onChange: noop,
   onEnter: noop,
   onLeave: noop,
   onHover: noop,
   onDrop: noop,
-  onSomeInvalid: noop
+  onInvalid: noop,
+  beforeAppend: noop
 };
 
 var FileDropzone = function () {
@@ -185,7 +193,6 @@ var FileDropzone = function () {
     this.element = target;
     this.options = u.assign(DEFAULTS, opts);
     this.disabled = false;
-    this.files = [];
     this.fileInput = null;
     this.multiple = false;
 
@@ -195,6 +202,7 @@ var FileDropzone = function () {
   createClass(FileDropzone, [{
     key: 'init',
     value: function init() {
+      _setFiles.bind(this)([]);
       if (this.options.clickable) {
         this.element.addClass('dropzone--clickable');
         this.element.on('click', this.openFileChooser.bind(this));
@@ -235,7 +243,7 @@ var FileDropzone = function () {
             files.push(value);
           }
         }
-        that.addFiles(files);
+        _addFiles.bind(this)(files);
         if (!that.options.unique) {
           $(this).val('');
         }
@@ -244,44 +252,29 @@ var FileDropzone = function () {
       _insetStyles();
     }
   }, {
-    key: 'addFiles',
-    value: function addFiles(files) {
-      var _this = this;
-
-      var valid = [];
-      var invalid = [];
-      files.forEach(function (file) {
-        if (u.fileTypeValid(file, _this.accept)) {
-          if (!_this.options.unique || _this.files.indexOf(file) < 0) {
-            valid.push(file);
-          }
-        } else {
-          invalid.push(file);
-        }
-      });
-
-      if (invalid.length) {
-        this.onSomeInvalid && this.onSomeInvalid(invalid);
-      }
-
-      if (!valid[0]) return;
-
-      if (!this.multiple) {
-        if (this.files.length > 0) return;
-        valid = valid.slice(0, 1);
-      }
-
-      this.files = this.files.concat(valid);
-      this.options.onChange && this.options.onChange();
+    key: 'getFiles',
+    value: function getFiles() {
+      return _files;
     }
   }, {
     key: 'removeFile',
     value: function removeFile(file) {
-      var oldLen = this.files.length;
-      this.files = u.without(this.files, file);
-      if (this.files.length < oldLen) {
+      var files = this.getFiles();
+      var oldLen = files.length;
+      files = u.without(files, file);
+      if (files.length < oldLen) {
         this.options.onChange && this.options.onChange();
       }
+    }
+  }, {
+    key: 'pop',
+    value: function pop() {
+      var files = this.getFiles();
+      // let oldLen = files.length
+      var removed = files.pop();
+      _setFiles(files);
+      this.options.onChange && this.options.onChange();
+      return removed;
     }
   }, {
     key: 'openFileChooser',
@@ -291,7 +284,7 @@ var FileDropzone = function () {
   }, {
     key: 'clearAll',
     value: function clearAll() {
-      this.files = [];
+      _setFiles([]);
       this.options.onChange && this.options.onChange();
     }
   }, {
@@ -332,6 +325,52 @@ var FileDropzone = function () {
   }]);
   return FileDropzone;
 }();
+
+function _addFiles(files) {
+  var _this = this;
+
+  var valid = [];
+  var invalid = [];
+  files.forEach(function (file) {
+    if (u.fileTypeValid(file, _this.accept)) {
+      if (!_this.options.unique || _this.getFiles().indexOf(file) < 0) {
+        valid.push(file);
+      }
+    } else {
+      invalid.push(file);
+    }
+  });
+
+  if (invalid.length) {
+    this.onInvalid && this.onInvalid(invalid);
+  }
+
+  if (!valid[0]) return;
+
+  if (!this.multiple) {
+    if (this.getFiles().length > 0) return;
+    valid = valid.slice(0, 1);
+  }
+
+  var canAdd = true;
+  if (this.options.beforeAppend) {
+    var result = this.options.beforeAppend(valid);
+    if (typeof result == 'boolean') {
+      canAdd = result;
+    }
+  }
+
+  if (!canAdd) return;
+
+  if (!this.multiple) {
+    _setFiles(valid.slice(0, 1));
+  } else if (this.forceReplace) {
+    _setFiles(valid);
+  } else {
+    _setFiles(this.getFiles().concat(valid));
+  }
+  this.options.onChange && this.options.onChange();
+}
 
 function _insetStyles() {
   $("<style>.dropzone--clickable { cursor: pointer; }</style>").appendTo("head");
@@ -375,7 +414,7 @@ function _handleDrop(evt) {
     files = dt.files;
   }
 
-  this.addFiles(files);
+  _addFiles.bind(this)(files);
 }
 
 return FileDropzone;

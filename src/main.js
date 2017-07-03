@@ -2,6 +2,10 @@ import u from './util'
 import $ from 'jquery'
 
 let noop = function () { }
+let _files = []
+let _setFiles = function (files) {
+  _files = files
+}
 
 const DEFAULTS = {
   target: '',
@@ -12,12 +16,14 @@ const DEFAULTS = {
   accept: '',
   capture: true,
   unique: false,
+  forceReplace: false,
   onChange: noop,
   onEnter: noop,
   onLeave: noop,
   onHover: noop,
   onDrop: noop,
-  onSomeInvalid: noop
+  onInvalid: noop,
+  beforeAppend: noop
 }
 
 export default class FileDropzone {
@@ -37,7 +43,6 @@ export default class FileDropzone {
     this.element = target
     this.options = u.assign(DEFAULTS, opts)
     this.disabled = false
-    this.files = []
     this.fileInput = null
     this.multiple = false
 
@@ -63,6 +68,7 @@ export default class FileDropzone {
   }
 
   init() {
+    _setFiles.bind(this)([])
     if (this.options.clickable) {
       this.element.addClass('dropzone--clickable')
       this.element.on('click', this.openFileChooser.bind(this))
@@ -107,7 +113,7 @@ export default class FileDropzone {
           files.push(value)
         }
       }
-      that.addFiles(files)
+      _addFiles.bind(this)(files)
       if (!that.options.unique) {
         $(this).val('')
       }
@@ -116,40 +122,26 @@ export default class FileDropzone {
     _insetStyles()
   }
 
-  addFiles(files) {
-    var valid = []
-    var invalid = []
-    files.forEach(file => {
-      if (u.fileTypeValid(file, this.accept)) {
-        if (!this.options.unique || this.files.indexOf(file) < 0) {
-          valid.push(file)
-        }
-      } else {
-        invalid.push(file)
-      }
-    })
-
-    if (invalid.length) {
-      this.onSomeInvalid && this.onSomeInvalid(invalid)
-    }
-
-    if (!valid[0]) return
-
-    if (!this.multiple) {
-      if (this.files.length > 0) return
-      valid = valid.slice(0, 1)
-    }
-
-    this.files = this.files.concat(valid)
-    this.options.onChange && this.options.onChange()
+  getFiles() {
+    return _files
   }
 
   removeFile(file) {
-    let oldLen = this.files.length
-    this.files = u.without(this.files, file)
-    if (this.files.length < oldLen) {
+    let files = this.getFiles()
+    let oldLen = files.length
+    files = u.without(files, file)
+    if (files.length < oldLen) {
       this.options.onChange && this.options.onChange()
     }
+  }
+
+  pop() {
+    let files = this.getFiles()
+    // let oldLen = files.length
+    var removed = files.pop()
+    _setFiles(files)
+    this.options.onChange && this.options.onChange()
+    return removed
   }
 
   openFileChooser() {
@@ -157,7 +149,7 @@ export default class FileDropzone {
   }
 
   clearAll() {
-    this.files = []
+    _setFiles([])
     this.options.onChange && this.options.onChange()
   }
 
@@ -174,6 +166,49 @@ export default class FileDropzone {
   }
 }
 
+function _addFiles(files) {
+  var valid = []
+  var invalid = []
+  files.forEach(file => {
+    if (u.fileTypeValid(file, this.accept)) {
+      if (!this.options.unique || this.getFiles().indexOf(file) < 0) {
+        valid.push(file)
+      }
+    } else {
+      invalid.push(file)
+    }
+  })
+
+  if (invalid.length) {
+    this.onInvalid && this.onInvalid(invalid)
+  }
+
+  if (!valid[0]) return
+
+  if (!this.multiple) {
+    if (this.getFiles().length > 0) return
+    valid = valid.slice(0, 1)
+  }
+
+  let canAdd = true
+  if (this.options.beforeAppend) {
+    let result = this.options.beforeAppend(valid)
+    if (typeof result == 'boolean') {
+      canAdd = result
+    }
+  }
+
+  if (!canAdd) return
+
+  if (!this.multiple) {
+    _setFiles(valid.slice(0, 1))
+  } else if (this.forceReplace) {
+    _setFiles(valid)
+  } else {
+    _setFiles(this.getFiles().concat(valid))
+  }
+  this.options.onChange && this.options.onChange()
+}
 
 function _insetStyles() {
   $("<style>.dropzone--clickable { cursor: pointer; }</style>").appendTo("head")
@@ -217,7 +252,7 @@ function _handleDrop(evt) {
     files = dt.files
   }
 
-  this.addFiles(files)
+  _addFiles.bind(this)(files)
 }
 
 function _handleClick(evt) {
