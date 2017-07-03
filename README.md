@@ -1,5 +1,5 @@
 # file-dropzone
-A simple lightweight file dropzone component in javascript or jQuery.
+A simple lightweight file dropzone component based on jQuery. You can easily make any existing element become a dropzone.
 
 ```js
 var myDropzone = new FileDropzone({
