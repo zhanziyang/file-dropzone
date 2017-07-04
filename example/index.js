@@ -5,13 +5,13 @@ var myDropzone = new FileDropzone({
   multiple: true,
   forceReplace: false,
   paramName: 'my-file',
-  accept: 'image/*',
+  accept: '',
   onChange: function () {
     var files = this.getFiles()
-    var elem = this.element
+    var elem = this.element.find('.files')
     elem.empty()
     files.forEach(function (item) {
-      elem.append('<div class="file-name">' + item.name + '</div>')
+      elem.append('<div class="file-name" data-id="' + item.id + '">' + item.name + '</div>')
     })
   },
   onEnter: function () {
@@ -30,7 +30,14 @@ var myDropzone = new FileDropzone({
     console.log('file invalid')
     console.log(files)
   },
-  beforeAdd: function () {
+  beforeAdd: function (files) {
+    for (var i = 0, len = files.length; i < len; i++) {
+      let file = files[i]
+      file.id = new Date().getTime()
+      if (/fuck/.test(file.name)) {
+        return false
+      }
+    }
     return true
   }
 })

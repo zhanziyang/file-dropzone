@@ -7,7 +7,9 @@
     "build:full": "rollup -c",
     "build:min": "rollup -c --environment BUILD:min",
     "build": "npm run build:full && npm run build:min",
-    "dev": "rollup -c -w"
+    "dev": "npm-run-all --parallel dev:*",
+    "dev:rollup": "rollup -c -w",
+    "dev:bs": "browser-sync start --config bsconfig.js"
   },
   "repository": {
     "type": "git",
@@ -36,6 +38,8 @@
     "babel-plugin-external-helpers": "^6.22.0",
     "babel-preset-latest": "^6.24.1",
     "babelrc-rollup": "^3.0.0",
+    "browser-sync": "^2.18.12",
+    "npm-run-all": "^4.0.2",
     "rollup": "^0.43.0",
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-commonjs": "^8.0.2",

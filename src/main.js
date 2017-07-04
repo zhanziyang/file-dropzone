@@ -60,20 +60,21 @@ export default class FileDropzone {
     }
     if (unit == 'b') return file.size
 
-    var unitIndex = units.indexOf(unit.toLowerCase)
+    var unitIndex = units.indexOf(unit.toLowerCase())
     if (unitIndex < 0) {
       throw new TypeError('The unit should be one of "tb", "gb", "mb", "kb" and "b", the default value is "b"')
     }
 
-    return file.size / Math.pow(1024, unitIndex - 1)
+    return file.size / Math.pow(1024, unitIndex)
   }
 
   init() {
     _setFiles.bind(this)([])
-    if (this.options.clickable) {
+    this.clickable = this.options.clickable
+    if (this.clickable) {
       this.element.addClass('dropzone--clickable')
-      this.element.on('click', this.openFileChooser.bind(this))
     }
+    this.element[0].addEventListener('click', _handleClick.bind(this))
     this.multiple = typeof this.options.multiple === 'boolean' ? this.options.multiple : true
 
     this.fileInput = $(`<input type="file" hidden name="${this.options.paramName}" class="${this.options.paramName}" >`)
@@ -129,6 +130,7 @@ export default class FileDropzone {
     let files = this.getFiles()
     let oldLen = files.length
     files = u.without(files, file)
+    _setFiles(files)
     if (files.length < oldLen) {
       this.options.onChange && this.options.onChange.bind(this)()
     }
@@ -162,6 +164,14 @@ export default class FileDropzone {
     this.disabled = false
     this.element.removeClass('dropzone--disabled')
     this.fileInput.prop('disabled', false)
+  }
+
+  disableClick() {
+    this.clickable = false
+  }
+
+  enableClick() {
+    this.clickable = true
   }
 }
 
@@ -260,6 +270,6 @@ function _handleDrop(evt) {
 
 function _handleClick(evt) {
   if (this.disabled) return
-  if (!this.options.clickable) return
+  if (!this.clickable) return
   this.openFileChooser()
 }

@@ -9,7 +9,7 @@ var myDropzone = new FileDropzone({
   multiple: true,
   forceReplace: false,
   paramName: 'my-file',
-  accept: 'image/*',
+  accept: '',
   onChange: function () {
     var files = this.getFiles()
     var elem = this.element
@@ -42,4 +42,22 @@ var myDropzone = new FileDropzone({
 
 ## Methods
 
-To be done...
+### getFiles()
+
+### removeFile(file)
+
+### pop()
+
+### clearAll()
+
+### openFileChooser()
+
+### disable()
+
+### enable()
+
+### disableClick()
+
+### enableClick()
+
+### `static` getFileSize(file, unit)

@@ -6,22 +6,25 @@
   <title>Example</title>
   <meta name="description" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css">
   <link rel="stylesheet" href="index.css">
 </head>
 
 <body>
-  <div id="box">
+  <div id="box" class="animated bounceIn">
     <div class="words">
       <p>I used to be a basic DIV.</p>
       <p>Then someone called a <code>new FileDropzone()</code> on me. </p>
       <p>Poof, boom, paow, it's like magic.</p>
     </div>
+    <div class="files"></div>
   </div>
   <br>
   <h1>File Dropzone</h1>
-  <h3>Drop files everywhere.</h3>
+  <h3>Drop files anywhere you want.</h3>
+  <a href="https://github.com/zhanziyang/file-dropzone"><img src="github.png" class="github"></a>
   <script src="https://unpkg.com/jquery@3.2.1/dist/jquery.min.js"></script>
-  <script src="../dist/file-dropzone.js"></script>
+  <script src="file-dropzone.js"></script>
   <script src="index.js"></script>
 </body>
 

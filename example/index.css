@@ -16,11 +16,15 @@ body {
 }
 
 h1 {
-  text-transform: uppercase;
+  /*text-transform: uppercase;*/
 }
 
 h3 {
   color: #666;
+}
+
+.github {
+  width: 50px;
 }
 
 #box {
@@ -44,6 +48,16 @@ h3 {
   padding: 0 10px;
   font-size: 14px;
   color: #777
+}
+
+#box code {
+  background: #1C90F3;
+  white-space: nowrap;
+  color: white;
+  display: inline-block;
+  padding: 0 3px;
+  line-height: 1.4;
+  border-radius: 3px;
 }
 
 #box .file-name {

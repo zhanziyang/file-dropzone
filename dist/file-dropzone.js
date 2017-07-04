@@ -1,5 +1,5 @@
 /*
- * loopRequest v1.0.4
+ * loopRequest v1.0.5
  * https://github.com/zhanziyang/file-dropzone
  * 
  * Copyright (c) 2017 zhanziyang
@@ -204,10 +204,11 @@ var FileDropzone = function () {
     key: 'init',
     value: function init() {
       _setFiles.bind(this)([]);
-      if (this.options.clickable) {
+      this.clickable = this.options.clickable;
+      if (this.clickable) {
         this.element.addClass('dropzone--clickable');
-        this.element.on('click', this.openFileChooser.bind(this));
       }
+      this.element[0].addEventListener('click', _handleClick.bind(this));
       this.multiple = typeof this.options.multiple === 'boolean' ? this.options.multiple : true;
 
       this.fileInput = $('<input type="file" hidden name="' + this.options.paramName + '" class="' + this.options.paramName + '" >');
@@ -261,6 +262,7 @@ var FileDropzone = function () {
       var files = this.getFiles();
       var oldLen = files.length;
       files = u.without(files, file);
+      _setFiles(files);
       if (files.length < oldLen) {
         this.options.onChange && this.options.onChange.bind(this)();
       }
@@ -300,6 +302,16 @@ var FileDropzone = function () {
       this.element.removeClass('dropzone--disabled');
       this.fileInput.prop('disabled', false);
     }
+  }, {
+    key: 'disableClick',
+    value: function disableClick() {
+      this.clickable = false;
+    }
+  }, {
+    key: 'enableClick',
+    value: function enableClick() {
+      this.clickable = true;
+    }
   }], [{
     key: 'getFileSize',
     value: function getFileSize(file) {
@@ -314,12 +326,12 @@ var FileDropzone = function () {
       }
       if (unit == 'b') return file.size;
 
-      var unitIndex = units.indexOf(unit.toLowerCase);
+      var unitIndex = units.indexOf(unit.toLowerCase());
       if (unitIndex < 0) {
         throw new TypeError('The unit should be one of "tb", "gb", "mb", "kb" and "b", the default value is "b"');
       }
 
-      return file.size / Math.pow(1024, unitIndex - 1);
+      return file.size / Math.pow(1024, unitIndex);
     }
   }]);
   return FileDropzone;
@@ -418,6 +430,12 @@ function _handleDrop(evt) {
   }
 
   _addFiles.bind(this)(files);
+}
+
+function _handleClick(evt) {
+  if (this.disabled) return;
+  if (!this.clickable) return;
+  this.openFileChooser();
 }
 
 return FileDropzone;
