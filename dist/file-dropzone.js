@@ -1,5 +1,5 @@
 /*
- * loopRequest v1.0.5
+ * loopRequest v1.0.6
  * https://github.com/zhanziyang/file-dropzone
  * 
  * Copyright (c) 2017 zhanziyang
