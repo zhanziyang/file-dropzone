@@ -21,13 +21,13 @@ var myDropzone = new FileDropzone({
     console.log('leave')
   },
   onHover: function () {
-    // console.log('hover')
+    console.log('hover')
   },
   onDrop: function () {
     console.log('drop')
   },
   onFolderFound: function (folders) {
-    console.log('you are dropping ' + folders.length + ' folders.')
+    console.log('' + folders.length + ' folders ignored. Change noFolder option to true to accept folders.')
   },
   onInvalid: function (files) {
     console.log('file invalid')
