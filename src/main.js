@@ -132,8 +132,8 @@ export default class FileDropzone {
     var fileToRemove
     if (arg instanceof File) {
       fileToRemove = arg
-      u.without(files, fileToRemove)
-      _setFiles.bind(this)(files)
+      var newList = u.without(files, fileToRemove)
+      _setFiles.bind(this)(newList)
     } else if (typeof arg === 'number') {
       fileToRemove = files.splice(arg, 1)[0]
     }
