@@ -126,16 +126,22 @@ export default class FileDropzone {
     return _files
   }
 
-  removeFile(file) {
+  removeFile(arg) {
     let files = this.getFiles()
     let oldLen = files.length
-    files = u.without(files, file)
-    _setFiles.bind(this)(files)
-    if (files.length < oldLen) {
+    var fileToRemove
+    if (arg instanceof File) {
+      fileToRemove = arg
+      u.without(files, fileToRemove)
+      _setFiles.bind(this)(files)
+    } else if (typeof arg === 'number') {
+      fileToRemove = files.splice(arg, 1)[0]
+    }
+    if (this.getFiles().length === oldLen - 1) {
       this.options.onChange && this.options.onChange.bind(this)()
-      return true
+      return fileToRemove
     } else {
-      return false
+      return null
     }
   }
 
@@ -155,7 +161,7 @@ export default class FileDropzone {
     if (!files.length) {
       return null
     }
-    var removed = files.pop()
+    var removed = files.shift()
     _setFiles.bind(this)(files)
     this.options.onChange && this.options.onChange.bind(this)()
     return removed

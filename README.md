@@ -79,12 +79,11 @@ new FileDropzone(options)
 
 - Returns an array of files ([File](https://developer.mozilla.org/en-US/docs/Web/API/File) object) which are currently in the dropzone.
 
-#### removeFile(file)
+#### removeFile(foo)
 
 - args:
-  - `file`: (File object) the file you want to remove from the current list.
-- This method tries to remove a file from the current file list.
-- Returns `true` if the file is removed, `false` if the file is not in the list thus none is removed.
+  - `foo`: (File object or Number) if `foo` is a file which is already in the file list, it will be removed from the list. If `foo` is a number, the number indicates the index of file that will be removed.
+- Returns the removed file if it is removed successfully, otherwise returns `null`.
 
 #### pop()
 

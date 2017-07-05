@@ -206,7 +206,7 @@ var FileDropzone = function () {
       _setFiles.bind(this)([]);
       this.clickable = this.options.clickable;
       if (this.clickable) {
-        this.element.addClass('dropzone--clickable');
+        this.enableClick();
       }
       this.element[0].addEventListener('click', _handleClick.bind(this));
       this.multiple = typeof this.options.multiple === 'boolean' ? this.options.multiple : true;
@@ -258,16 +258,22 @@ var FileDropzone = function () {
     }
   }, {
     key: 'removeFile',
-    value: function removeFile(file) {
+    value: function removeFile(arg) {
       var files = this.getFiles();
       var oldLen = files.length;
-      files = u.without(files, file);
-      _setFiles.bind(this)(files);
-      if (files.length < oldLen) {
+      var fileToRemove;
+      if (arg instanceof File) {
+        fileToRemove = arg;
+        u.without(files, fileToRemove);
+        _setFiles.bind(this)(files);
+      } else if (typeof arg === 'number') {
+        fileToRemove = files.splice(arg, 1)[0];
+      }
+      if (this.getFiles().length === oldLen - 1) {
         this.options.onChange && this.options.onChange.bind(this)();
-        return true;
+        return fileToRemove;
       } else {
-        return false;
+        return null;
       }
     }
   }, {
@@ -289,7 +295,7 @@ var FileDropzone = function () {
       if (!files.length) {
         return null;
       }
-      var removed = files.pop();
+      var removed = files.shift();
       _setFiles.bind(this)(files);
       this.options.onChange && this.options.onChange.bind(this)();
       return removed;
@@ -322,11 +328,13 @@ var FileDropzone = function () {
   }, {
     key: 'disableClick',
     value: function disableClick() {
+      this.element.removeClass('dropzone--clickable');
       this.clickable = false;
     }
   }, {
     key: 'enableClick',
     value: function enableClick() {
+      this.element.addClass('dropzone--clickable');
       this.clickable = true;
     }
   }], [{
