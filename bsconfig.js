@@ -1,6 +1,6 @@
 module.exports = {
   server: {
-    baseDir: ['example', 'dist'],
+    baseDir: ['example', '.'],
     index: 'index.html'
   },
   open: false,
