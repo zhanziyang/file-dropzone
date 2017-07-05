@@ -76,5 +76,35 @@ export default {
     }
 
     return false
+  },
+
+  eventHasFile(evt) {
+    var dt = evt.dataTransfer || evt.originalEvent.dataTransfer
+    if (dt.types) {
+      for (var i = 0, len = dt.types.length; i < len; i++) {
+        if (dt.types[i] == "Files") {
+          return true
+        }
+      }
+    }
+
+    return false
+  },
+
+  getFilesFromEvent(evt) {
+    let dt = evt.dataTransfer || evt.originalEvent.dataTransfer
+    let files = []
+    if (dt.items && dt.items.length) {
+      for (let i = 0, len = dt.items.length; i < len; i++) {
+        let item = dt.items[i]
+        if (item.kind === 'file') {
+          files.push(item.getAsFile())
+        }
+      }
+    } else {
+      files = dt.files
+    }
+
+    return files
   }
 }

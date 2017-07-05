@@ -146,6 +146,34 @@ var u = {
     }
 
     return false;
+  },
+  eventHasFile: function eventHasFile(evt) {
+    var dt = evt.dataTransfer || evt.originalEvent.dataTransfer;
+    if (dt.types) {
+      for (var i = 0, len = dt.types.length; i < len; i++) {
+        if (dt.types[i] == "Files") {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  },
+  getFilesFromEvent: function getFilesFromEvent(evt) {
+    var dt = evt.dataTransfer || evt.originalEvent.dataTransfer;
+    var files = [];
+    if (dt.items && dt.items.length) {
+      for (var i = 0, len = dt.items.length; i < len; i++) {
+        var item = dt.items[i];
+        if (item.kind === 'file') {
+          files.push(item.getAsFile());
+        }
+      }
+    } else {
+      files = dt.files;
+    }
+
+    return files;
   }
 };
 
@@ -165,12 +193,14 @@ var DEFAULTS = {
   accept: '',
   capture: true,
   unique: false,
+  noFolder: true,
   forceReplace: false,
   onChange: noop,
   onEnter: noop,
   onLeave: noop,
   onHover: noop,
   onDrop: noop,
+  onFolderFound: noop,
   onInvalid: noop,
   beforeAdd: noop
 };
@@ -414,9 +444,10 @@ function _insetStyles() {
 }
 
 function _handleDragEnter(evt) {
-  if (this.disabled) return;
-  evt.preventDefault();
   dragTrack++;
+  if (this.disabled || !u.eventHasFile(evt)) return;
+  evt.preventDefault();
+  evt.stopPropagation();
   if (dragTrack == 1) {
     this.options.onEnter && this.options.onEnter.bind(this)(evt);
     this.element.addClass(this.options.fileHoverClass);
@@ -424,9 +455,10 @@ function _handleDragEnter(evt) {
 }
 
 function _handleDragLeave(evt) {
-  if (this.disabled) return;
-  evt.preventDefault();
   dragTrack--;
+  if (this.disabled || !u.eventHasFile(evt)) return;
+  evt.preventDefault();
+  evt.stopPropagation();
   if (dragTrack === 0) {
     this.options.onLeave && this.options.onLeave.bind(this)(evt);
     this.element.removeClass(this.options.fileHoverClass);
@@ -434,29 +466,20 @@ function _handleDragLeave(evt) {
 }
 
 function _handleDragOver(evt) {
-  if (this.disabled) return;
+  if (this.disabled || !u.eventHasFile(evt)) return;
   evt.preventDefault();
+  // evt.stopPropagation()
   this.options.onHover && this.options.onHover.bind(this)(evt);
 }
 
 function _handleDrop(evt) {
-  if (this.disabled) return;
-  evt.preventDefault();
   dragTrack--;
+  if (this.disabled || !u.eventHasFile(evt)) return;
+  evt.preventDefault();
+  evt.stopPropagation();
   this.options.onDrop && this.options.onDrop.bind(this)(evt);
   this.element.removeClass(this.options.fileHoverClass);
-  var dt = evt.dataTransfer || evt.originalEvent.dataTransfer;
-  var files = [];
-  if (dt.items && dt.items.length) {
-    for (var i = 0, len = dt.items.length; i < len; i++) {
-      var item = dt.items[i];
-      if (item.kind === 'file') {
-        files.push(item.getAsFile());
-      }
-    }
-  } else {
-    files = dt.files;
-  }
+  var files = _detectFolders.bind(this)(u.getFilesFromEvent(evt));
 
   _addFiles.bind(this)(files);
 }
@@ -465,6 +488,28 @@ function _handleClick(evt) {
   if (this.disabled) return;
   if (!this.clickable) return;
   this.openFileChooser();
+}
+
+function _detectFolders(files) {
+  var folders = [];
+  var realFiles = [];
+  for (var i = 0, len = files.length; i < len; i++) {
+    var f = files[i];
+    if (!f.type && f.size % 4096 == 0) {
+      folders.push(f);
+    } else {
+      realFiles.push(f);
+    }
+  }
+
+  if (folders.length > 0) {
+    this.options.onFolderFound && this.options.onFolderFound.bind(this)(folders);
+  }
+  if (this.options.noFolder) {
+    return realFiles;
+  } else {
+    return files;
+  }
 }
 
 return FileDropzone;
