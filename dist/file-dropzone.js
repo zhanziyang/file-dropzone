@@ -262,16 +262,33 @@ var FileDropzone = function () {
       var files = this.getFiles();
       var oldLen = files.length;
       files = u.without(files, file);
-      _setFiles(files);
+      _setFiles.bind(this)(files);
       if (files.length < oldLen) {
         this.options.onChange && this.options.onChange.bind(this)();
+        return true;
+      } else {
+        return false;
       }
     }
   }, {
     key: 'pop',
     value: function pop() {
       var files = this.getFiles();
-      // let oldLen = files.length
+      if (!files.length) {
+        return null;
+      }
+      var removed = files.pop();
+      _setFiles.bind(this)(files);
+      this.options.onChange && this.options.onChange.bind(this)();
+      return removed;
+    }
+  }, {
+    key: 'shift',
+    value: function shift() {
+      var files = this.getFiles();
+      if (!files.length) {
+        return null;
+      }
       var removed = files.pop();
       _setFiles.bind(this)(files);
       this.options.onChange && this.options.onChange.bind(this)();
@@ -381,7 +398,11 @@ function _addFiles(files) {
 }
 
 function _insetStyles() {
-  $("<style>.dropzone--clickable { cursor: pointer; }</style>").appendTo("head");
+  if (!window.__dropzone_styled_inserted) {
+    $('<style>\n      .dropzone--clickable { cursor: pointer; }\n      .dropzone--file-hover { box-shadow: inset 0 0 10px #aaa; }\n    </style>').appendTo("head");
+
+    window.__dropzone_styled_inserted = true;
+  }
 }
 
 function _handleDragEnter(evt) {

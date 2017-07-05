@@ -130,15 +130,31 @@ export default class FileDropzone {
     let files = this.getFiles()
     let oldLen = files.length
     files = u.without(files, file)
-    _setFiles(files)
+    _setFiles.bind(this)(files)
     if (files.length < oldLen) {
       this.options.onChange && this.options.onChange.bind(this)()
+      return true
+    } else {
+      return false
     }
   }
 
   pop() {
     let files = this.getFiles()
-    // let oldLen = files.length
+    if (!files.length) {
+      return null
+    }
+    var removed = files.pop()
+    _setFiles.bind(this)(files)
+    this.options.onChange && this.options.onChange.bind(this)()
+    return removed
+  }
+
+  shift() {
+    let files = this.getFiles()
+    if (!files.length) {
+      return null
+    }
     var removed = files.pop()
     _setFiles.bind(this)(files)
     this.options.onChange && this.options.onChange.bind(this)()
@@ -217,7 +233,15 @@ function _addFiles(files) {
 }
 
 function _insetStyles() {
-  $("<style>.dropzone--clickable { cursor: pointer; }</style>").appendTo("head")
+  if (!window.__dropzone_styled_inserted) {
+    $(`<style>
+      .dropzone--clickable { cursor: pointer; }
+      .dropzone--file-hover { box-shadow: inset 0 0 10px #aaa; }
+    </style>`
+    ).appendTo("head")
+
+    window.__dropzone_styled_inserted = true
+  }
 }
 
 function _handleDragEnter(evt) {
