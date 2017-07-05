@@ -72,7 +72,7 @@ export default class FileDropzone {
     _setFiles.bind(this)([])
     this.clickable = this.options.clickable
     if (this.clickable) {
-      this.element.addClass('dropzone--clickable')
+      this.enableClick()
     }
     this.element[0].addEventListener('click', _handleClick.bind(this))
     this.multiple = typeof this.options.multiple === 'boolean' ? this.options.multiple : true
@@ -183,10 +183,12 @@ export default class FileDropzone {
   }
 
   disableClick() {
+    this.element.removeClass('dropzone--clickable')
     this.clickable = false
   }
 
   enableClick() {
+    this.element.addClass('dropzone--clickable')
     this.clickable = true
   }
 }
